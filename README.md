@@ -26,7 +26,7 @@ For a one-off: `claude plugin marketplace add ishwar-iyer12/agent-kit && claude 
 
 ## Thin callers
 
-Copy from `examples/` into `<project>/.github/workflows/`. `ci.yml` is project-specific; the other three are one `uses:` line each with `secrets: inherit`.
+Copy from `examples/` into `<project>/.github/workflows/`. Callers must grant the `permissions` shown in the examples (a called workflow cannot exceed its caller; `id-token: write` is not in the default token). `ci.yml` is project-specific; the other three are one `uses:` line each with `secrets: inherit`.
 
 Secrets the reusable workflows read (set once at org level, or per repo): `ANTHROPIC_API_KEY` (preferred) or `CLAUDE_CODE_OAUTH_TOKEN` (interim), `SLACK_WEBHOOK_URL`, `TRELLO_KEY`+`TRELLO_TOKEN` or `LINEAR_API_KEY`, `STAGING_USER`, `STAGING_SSH_KEY`. Variables: `STAGING_ENABLED`, `STAGING_HOST`. The Claude GitHub App must be installed on each repo.
 

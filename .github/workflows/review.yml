@@ -28,14 +28,13 @@ permissions:
   issues: read
   id-token: write
 
-concurrency:
-  group: review-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
 jobs:
   review:
     if: github.event.pull_request.draft == false && github.event.action != 'labeled'
     runs-on: ubuntu-latest
+    concurrency:
+      group: review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
