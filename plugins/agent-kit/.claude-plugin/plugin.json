@@ -1,0 +1,7 @@
+{
+  "name": "agent-kit",
+  "version": "0.2.0",
+  "description": "Skills for the agent-first workflow: implement a tracker card end to end, run e2e, write release notes, apply the review checklist, sync Paper design tokens, set up a repo.",
+  "author": { "name": "data.family engineering" },
+  "keywords": ["trello", "linear", "paper", "playwright", "review"]
+}

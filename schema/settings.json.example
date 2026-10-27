@@ -1,0 +1,7 @@
+{
+  "$comment": "Project .claude/settings.json. Pulls the agent-kit plugin from the public marketplace so /agent-kit:implement-card etc. are available in every clone and in CI.",
+  "extraKnownMarketplaces": {
+    "agent-kit": { "source": { "source": "github", "repo": "ishwar-iyer12/agent-kit" } }
+  },
+  "enabledPlugins": { "agent-kit@agent-kit": true }
+}

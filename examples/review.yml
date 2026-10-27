@@ -1,0 +1,9 @@
+# Copy into <project>/.github/workflows/review.yml
+name: Claude Code Review
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened, labeled]
+jobs:
+  review:
+    uses: ishwar-iyer12/agent-kit/.github/workflows/review.yml@main
+    secrets: inherit

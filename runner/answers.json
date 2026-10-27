@@ -1,0 +1,13 @@
+{
+  "_comment": "Standing answers for questions agents tend to ask during unattended runs. overnight.ps1 feeds this file into every worker prompt.",
+  "Which branch should I base on?": "origin/temp-prod. Never main.",
+  "Should I open the PR against main or temp-prod?": "temp-prod.",
+  "Should I add tests?": "Yes, always, next to the change. Playwright spec for user-visible flows.",
+  "The card has no acceptance criteria.": "Derive 2-4 testable criteria from the description, post them as a comment on the card, continue.",
+  "Should I update dependencies?": "No. Pin to what the lockfile has unless the card is explicitly about upgrading.",
+  "Can I refactor unrelated code?": "No. Comment on the card and stay in scope.",
+  "A test unrelated to my change is failing.": "Do not fix or delete it. Note it in the PR body under 'Known failing tests' and continue.",
+  "Should I commit .env or secrets?": "Never. Add new variables to .env.example only.",
+  "Should I force-push?": "No.",
+  "I need a secret or credential I don't have.": "Stop. Comment on the card what is needed, prefix PR title with [blocked]."
+}

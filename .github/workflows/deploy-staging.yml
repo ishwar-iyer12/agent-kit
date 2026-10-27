@@ -1,0 +1,116 @@
+# Reusable: deploy a ref to the staging EC2 over SSH with docker compose, post to Slack, comment on the tracker item.
+# Caller triggers on push to the base branch and pull_request [labeled], passes compose_dir, and `secrets: inherit`.
+# Gate in the caller: if: vars.STAGING_ENABLED == 'true'.
+name: Deploy staging (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      compose_dir:
+        description: Directory on the staging host holding this project's clone
+        type: string
+        required: true
+      web_port:
+        type: string
+        default: "8080"
+      staging_host:
+        type: string
+        required: true
+    secrets:
+      STAGING_USER:
+        required: true
+      STAGING_SSH_KEY:
+        required: true
+      SLACK_WEBHOOK_URL:
+        required: false
+      TRELLO_KEY:
+        required: false
+      TRELLO_TOKEN:
+        required: false
+      LINEAR_API_KEY:
+        required: false
+
+concurrency:
+  group: deploy-staging-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'push' || github.event.label.name == 'deploy-staging'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: https://${{ inputs.staging_host }}
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      TRELLO_KEY: ${{ secrets.TRELLO_KEY }}
+      TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
+      LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+      HOST: ${{ inputs.staging_host }}
+    steps:
+      - name: Resolve ref
+        id: ref
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+            echo "label=PR #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "label=${{ github.ref_name }} @ ${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ inputs.staging_host }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd ${{ inputs.compose_dir }}
+            git fetch --all --prune
+            git checkout --detach ${{ steps.ref.outputs.sha }}
+            docker compose pull --ignore-buildable || true
+            docker compose up -d --build --remove-orphans
+            for i in $(seq 1 30); do
+              curl -fs http://localhost:${{ inputs.web_port }}/api/health && exit 0 || sleep 2
+            done
+            echo "health check failed"; docker compose ps; exit 1
+
+      - name: Post to Slack
+        if: always() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          STATUS: ${{ job.status }}
+          LABEL: ${{ steps.ref.outputs.label }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          icon=$([ "$STATUS" = "success" ] && echo ":white_check_mark:" || echo ":x:")
+          text="$icon *Staging deploy $STATUS* — ${{ github.repository }} — $LABEL\n• https://$HOST\n• <$RUN_URL|workflow run>"
+          [ -n "$PR_URL" ] && text="$text\n• <$PR_URL|pull request>"
+          curl -fs -X POST -H 'Content-type: application/json' --data "{\"text\":\"$text\"}" "$SLACK_WEBHOOK_URL"
+
+      - name: Comment on tracker item
+        if: github.event_name == 'pull_request'
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+          STATUS: ${{ job.status }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          msg="Staging deploy $STATUS: https://$HOST ($PR_URL)"
+          card=$(printf '%s' "$BODY" | grep -oE 'https://trello.com/c/[A-Za-z0-9]+' | head -n1)
+          issue=$(printf '%s' "$BODY" | grep -oE 'https://linear.app/[^/]+/issue/[A-Z]+-[0-9]+' | head -n1)
+          if [ -n "$card" ] && [ -n "$TRELLO_KEY" ]; then
+            curl -fs -X POST "https://api.trello.com/1/cards/${card##*/}/actions/comments" \
+              --data-urlencode "text=$msg" --data-urlencode "key=$TRELLO_KEY" --data-urlencode "token=$TRELLO_TOKEN" > /dev/null
+          elif [ -n "$issue" ] && [ -n "$LINEAR_API_KEY" ]; then
+            key=$(printf '%s' "$issue" | grep -oE '[A-Z]+-[0-9]+$')
+            id=$(curl -fs https://api.linear.app/graphql -H "Authorization: $LINEAR_API_KEY" -H 'Content-Type: application/json' \
+              --data "{\"query\":\"{ issue(id: \\\"$key\\\") { id } }\"}" | grep -oE '"id":"[^"]+"' | head -n1 | cut -d'"' -f4)
+            curl -fs https://api.linear.app/graphql -H "Authorization: $LINEAR_API_KEY" -H 'Content-Type: application/json' \
+              --data "{\"query\":\"mutation { commentCreate(input: { issueId: \\\"$id\\\", body: \\\"$msg\\\" }) { success } }\"}" > /dev/null
+          else
+            echo "no Card:/Issue: line or no tracker secret; skipping"
+          fi

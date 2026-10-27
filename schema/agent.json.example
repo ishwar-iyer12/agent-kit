@@ -1,0 +1,27 @@
+{
+  "$comment": "Lives at the root of every project repo as agent.json. Read by the runner, the skills and the reusable workflows.",
+  "project": "trustlayer",
+  "tracker": "trello",
+  "baseBranch": "temp-prod",
+  "releaseBranch": "main",
+  "branchPrefix": "agent/",
+  "trello": {
+    "boardId": "<board id from https://trello.com/b/<short>.json>",
+    "lists": { "ready": "Agent Ready", "inProgress": "In Progress", "inReview": "In Review", "done": "Done", "needsSpec": "Needs Spec" }
+  },
+  "linear": {
+    "teamKey": "TL",
+    "readyLabel": "agent-ready",
+    "states": { "ready": "Todo", "inProgress": "In Progress", "inReview": "In Review", "done": "Done", "needsSpec": "Backlog" }
+  },
+  "test": {
+    "web": "cd web && pnpm test && pnpm build",
+    "api": "cd api && pytest -q",
+    "e2e": "cd web && pnpm e2e"
+  },
+  "design": {
+    "paperFileId": null,
+    "exportDir": "design"
+  },
+  "slackChannel": "#eng-agent"
+}

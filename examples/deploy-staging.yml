@@ -1,0 +1,16 @@
+# Copy into <project>/.github/workflows/deploy-staging.yml and set compose_dir.
+# Repo variables: STAGING_ENABLED=true, STAGING_HOST=<dns>. Secrets: STAGING_USER, STAGING_SSH_KEY (+ SLACK_WEBHOOK_URL, tracker tokens).
+name: Deploy staging
+on:
+  push:
+    branches: [temp-prod]
+  pull_request:
+    types: [labeled]
+jobs:
+  deploy:
+    if: vars.STAGING_ENABLED == 'true'
+    uses: ishwar-iyer12/agent-kit/.github/workflows/deploy-staging.yml@main
+    with:
+      compose_dir: ~/agent-workflow-demo
+      staging_host: ${{ vars.STAGING_HOST }}
+    secrets: inherit

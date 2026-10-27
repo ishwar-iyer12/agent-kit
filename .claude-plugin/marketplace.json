@@ -1,0 +1,12 @@
+{
+  "name": "agent-kit",
+  "owner": { "name": "data.family engineering" },
+  "metadata": { "description": "Shared skills, workflows and runner for the agent-first engineering workflow." },
+  "plugins": [
+    {
+      "name": "agent-kit",
+      "source": "./plugins/agent-kit",
+      "description": "implement-card, e2e, release-notes, review-checklist, design-tokens, setup-repo"
+    }
+  ]
+}

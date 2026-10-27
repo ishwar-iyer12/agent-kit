@@ -1,0 +1,9 @@
+{
+  "$comment": "Per engineer machine, NOT committed. Lives next to the runner or at $env:AGENT_PROJECTS_JSON. Maps project names (agent.json.project) to local clones. The runner reads each clone's agent.json for tracker and branch details.",
+  "maxCardsPerNight": 5,
+  "model": "opus",
+  "projects": [
+    { "name": "agent-workflow-demo", "path": "C:/Users/ishwa/OneDrive/Documents/Workspace/Workspace/agent-workflow-demo", "enabled": true },
+    { "name": "trustlayer", "path": "C:/Users/ishwa/OneDrive/Documents/Workspace/TDF/TrustLayer", "enabled": false }
+  ]
+}
