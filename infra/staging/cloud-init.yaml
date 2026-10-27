@@ -1,0 +1,41 @@
+#cloud-config
+# Ubuntu 24.04 staging host: docker + compose, deploy user, project clones. Rendered by provision-staging.ps1.
+package_update: true
+package_upgrade: false
+packages:
+  - ca-certificates
+  - curl
+  - git
+  - unzip
+
+users:
+  - name: deploy
+    groups: [sudo, docker]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - __SSH_PUBKEY__
+
+write_files:
+  - path: /etc/docker/daemon.json
+    content: |
+      { "log-driver": "json-file", "log-opts": { "max-size": "20m", "max-file": "3" } }
+  - path: /home/deploy/README.staging
+    owner: deploy:deploy
+    content: |
+      Staging host. One clone per project under /home/deploy/<repo>.
+      Deploys arrive from GitHub Actions (agent-kit deploy-staging.yml) as: git checkout --detach <sha> && docker compose up -d --build
+      Logs: docker compose -f /home/deploy/<repo>/docker-compose.yml logs -f
+
+runcmd:
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - systemctl enable --now docker
+  - usermod -aG docker deploy
+  - fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  - sudo -u deploy -H bash -c 'cd /home/deploy && for r in __REPOS__; do git clone --branch __BASE_BRANCH__ https://github.com/$r.git || true; done'
+  - touch /home/deploy/.cloud-init-done

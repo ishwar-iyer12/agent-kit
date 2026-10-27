@@ -49,6 +49,10 @@ Orca automation (per engineer): `orca automations create --name "Overnight imple
 
 Both adapters normalise items to `{ tracker, id, url, title, labels[], position }` and expose `Get-TrackerReadyItems` / `Move-TrackerItem`. States are named in `agent.json`: `ready → inProgress → inReview → done` (+ `needsSpec`). Trello = lists on one board; Linear = workflow states on one team plus the `agent-ready` label.
 
+## Staging
+
+One small EC2 for all projects, compose per project, provisioned by `infra/staging/provision-staging.ps1` (Ubuntu 24.04, docker, `deploy` user with your SSH key, repos cloned under `/home/deploy`). Needs `aws login` first. The script prints the `gh variable set` / `gh secret set` lines for each project repo. `STAGING_SCHEME=http` until a DNS name + TLS exist.
+
 ## Known limits
 
 - Paper MCP is local-only. `implement-card` commits a design export (`design/<id>/`) so the CI reviewer can check drift; cards needing Paper must not be labelled `cloud`.

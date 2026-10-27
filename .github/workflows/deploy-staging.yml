@@ -16,6 +16,10 @@ on:
       staging_host:
         type: string
         required: true
+      staging_scheme:
+        description: http until a DNS name + TLS exist, then https
+        type: string
+        default: https
     secrets:
       STAGING_USER:
         required: true
@@ -30,24 +34,24 @@ on:
       LINEAR_API_KEY:
         required: false
 
-concurrency:
-  group: deploy-staging-${{ github.repository }}
-  cancel-in-progress: false
-
 jobs:
   deploy:
     if: github.event_name == 'push' || github.event.label.name == 'deploy-staging'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    concurrency:
+      group: deploy-staging-${{ github.repository }}
+      cancel-in-progress: false
     environment:
       name: staging
-      url: https://${{ inputs.staging_host }}
+      url: ${{ inputs.staging_scheme }}://${{ inputs.staging_host }}
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       TRELLO_KEY: ${{ secrets.TRELLO_KEY }}
       TRELLO_TOKEN: ${{ secrets.TRELLO_TOKEN }}
       LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
       HOST: ${{ inputs.staging_host }}
+      URL: ${{ inputs.staging_scheme }}://${{ inputs.staging_host }}
     steps:
       - name: Resolve ref
         id: ref
@@ -88,7 +92,7 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           icon=$([ "$STATUS" = "success" ] && echo ":white_check_mark:" || echo ":x:")
-          text="$icon *Staging deploy $STATUS* — ${{ github.repository }} — $LABEL\n• https://$HOST\n• <$RUN_URL|workflow run>"
+          text="$icon *Staging deploy $STATUS* — ${{ github.repository }} — $LABEL\n• $URL\n• <$RUN_URL|workflow run>"
           [ -n "$PR_URL" ] && text="$text\n• <$PR_URL|pull request>"
           curl -fs -X POST -H 'Content-type: application/json' --data "{\"text\":\"$text\"}" "$SLACK_WEBHOOK_URL"
 
@@ -99,7 +103,7 @@ jobs:
           STATUS: ${{ job.status }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          msg="Staging deploy $STATUS: https://$HOST ($PR_URL)"
+          msg="Staging deploy $STATUS: $URL ($PR_URL)"
           card=$(printf '%s' "$BODY" | grep -oE 'https://trello.com/c/[A-Za-z0-9]+' | head -n1)
           issue=$(printf '%s' "$BODY" | grep -oE 'https://linear.app/[^/]+/issue/[A-Z]+-[0-9]+' | head -n1)
           if [ -n "$card" ] && [ -n "$TRELLO_KEY" ]; then
