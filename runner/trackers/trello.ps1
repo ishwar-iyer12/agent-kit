@@ -1,4 +1,4 @@
-# Trello adapter for overnight.ps1. Dot-source; needs TRELLO_KEY / TRELLO_TOKEN in env.
+﻿# Trello adapter for overnight.ps1. Dot-source; needs TRELLO_KEY / TRELLO_TOKEN in env.
 # Exposes: Get-TrackerReadyItems, Move-TrackerItem. Items are normalised to:
 #   @{ tracker='trello'; id=<shortLink>; url=<shortUrl>; title=<name>; labels=@(...); position=<pos>; raw=<card> }
 

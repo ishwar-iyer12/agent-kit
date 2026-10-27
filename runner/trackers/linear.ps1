@@ -1,4 +1,4 @@
-# Linear adapter for overnight.ps1. Dot-source; needs LINEAR_API_KEY in env.
+﻿# Linear adapter for overnight.ps1. Dot-source; needs LINEAR_API_KEY in env.
 # Exposes: Get-TrackerReadyItems, Move-TrackerItem. Items normalised like the Trello adapter:
 #   @{ tracker='linear'; id=<identifier e.g. TL-123>; url=<url>; title=<title>; labels=@(...); position=<sortOrder>; raw=<issue> }
 

@@ -51,8 +51,8 @@ https://claude.ai/code/routines → New task → Set up manually. Prompts in `do
 - [x] `orca status --json` reachable (2026-10-23). Settings → Experimental → enable orchestration still to confirm in UI.
 - [x] Repo registered in Orca, base ref `temp-prod` (2026-10-23). Worktree setup script still to set: `cd web && pnpm install --frozen-lockfile; cd ../api && python -m venv .venv && .venv/Scripts/pip install -r requirements.txt`.
 - [ ] Default agent Claude Code, model Opus 5.5.
-- [x] Automation `Overnight implement (local)` created **disabled** (2026-10-23). Enable after a successful `orca automations run <id>`. Original command for reference: `orca automations create --disabled --trigger "0 23 * * 0-4" --timezone Asia/Kolkata --provider claude --repo agent-workflow-demo --prompt "Run pwsh scripts/agent/overnight.ps1 and report the contents of the newest overnight-report-*.md" --json` → test with `orca automations run <id> --json` → enable.
-- [ ] Fallback without Orca: Windows Task Scheduler → `pwsh -File scripts\agent\overnight.ps1 -Mode claude` at 23:00.
+- [x] Automation `Overnight implement (local)` created **disabled** (2026-10-23). Enable after a successful `orca automations run <id>`. Original command for reference: `orca automations create --disabled --trigger "0 23 * * 0-4" --timezone Asia/Kolkata --provider claude --repo agent-workflow-demo --prompt "Run pwsh runner/overnight.ps1 and report the contents of the newest overnight-report-*.md" --json` → test with `orca automations run <id> --json` → enable.
+- [ ] Fallback without Orca: Windows Task Scheduler → `pwsh -File runner\overnight.ps1 -Mode claude` at 23:00.
 - [ ] Power plan: never sleep when plugged in. Mobile companion app installed for escalation pings.
 
 ## G. Staging (owner: Ishwar / Parichay; after demo proves out)

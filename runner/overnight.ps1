@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Overnight fan-out runner (agent-kit). For every enabled project in projects.json: read its agent.json,
   pull ready items from its tracker (Trello or Linear), start one Claude Code worker per item in its own

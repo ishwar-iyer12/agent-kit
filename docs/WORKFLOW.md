@@ -9,7 +9,7 @@ Slack thread / Granola call
         │  hourly cloud task "Intake triage" (reads Slack + Granola, writes Trello)
         ▼
 Trello: Inbox → Needs Spec → Agent Ready → In Progress → In Review → Done
-        │  23:00 weekdays: Orca automation runs scripts/agent/overnight.ps1
+        │  23:00 weekdays: Orca automation runs runner/overnight.ps1
         │  (one Claude Code worker per card, each in its own git worktree)
         ▼
 PR → temp-prod

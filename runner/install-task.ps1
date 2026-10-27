@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Registers (or removes) a Windows Task Scheduler job that runs overnight.ps1 on weeknights.
   Fallback for machines where Orca automations are not enabled. Safe to re-run.
