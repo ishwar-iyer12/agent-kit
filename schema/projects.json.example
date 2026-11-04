@@ -1,9 +1,10 @@
 {
-  "$comment": "Per engineer machine, NOT committed. Lives next to the runner or at $env:AGENT_PROJECTS_JSON. Maps project names (agent.json.project) to local clones. The runner reads each clone's agent.json for tracker and branch details.",
+  "$comment": "Per machine, NOT committed. Used by runner/overnight.ps1 (projects + paths) and slackbot (channels -> project). Lives at runner/projects.json or slackbot/projects.json, or wherever $env:AGENT_PROJECTS_JSON / TICKETBOT_PROJECTS points. The runner and the bot read each clone's agent.json for tracker and branch details.",
   "maxCardsPerNight": 5,
   "model": "opus",
+  "defaultProject": "agent-workflow-demo",
   "projects": [
-    { "name": "agent-workflow-demo", "path": "C:/Users/ishwa/OneDrive/Documents/Workspace/Workspace/agent-workflow-demo", "enabled": true },
-    { "name": "trustlayer", "path": "C:/Users/ishwa/OneDrive/Documents/Workspace/TDF/TrustLayer", "enabled": false }
+    { "name": "agent-workflow-demo", "path": "C:/Users/ishwa/OneDrive/Documents/Workspace/Workspace/agent-workflow-demo", "enabled": true, "channels": ["#eng-demo"] },
+    { "name": "trustlayer", "path": "C:/Users/ishwa/OneDrive/Documents/Workspace/TDF/TrustLayer", "enabled": false, "channels": ["#eng", "#clients"] }
   ]
 }

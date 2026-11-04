@@ -1,0 +1,5 @@
+.venv/
+.env
+projects.json
+__pycache__/
+.pytest_cache/

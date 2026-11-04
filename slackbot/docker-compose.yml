@@ -1,0 +1,17 @@
+# TicketBot. Socket Mode: outbound only, no ports to open.
+#   cp .env.example .env && edit; write projects.json; docker compose up -d --build
+# On the staging box the project repos live under /home/deploy; mount that read-only so the bot
+# can read each repo's agent.json.
+services:
+  ticketbot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TICKETBOT_PROJECTS: /app/projects.json
+    volumes:
+      - ./projects.json:/app/projects.json:ro
+      - ${REPOS_DIR:-/home/deploy}:/repos:ro
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

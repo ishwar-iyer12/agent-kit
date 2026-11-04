@@ -15,7 +15,7 @@
 #>
 [CmdletBinding()]
 param(
-  [string[]]$Repos = @('ishwar-iyer12/agent-workflow-demo'),
+  [string[]]$Repos = @('ishwar-iyer12/agent-workflow-demo', 'ishwar-iyer12/agent-kit'),
   [string]$BaseBranch = 'temp-prod',
   [string]$Region = 'eu-west-2',
   [string]$InstanceType = 't3.small',

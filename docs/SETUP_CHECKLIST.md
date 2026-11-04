@@ -45,6 +45,7 @@ https://claude.ai/code/routines → New task → Set up manually. Prompts in `do
 - [ ] Channel `#eng-agent` (overnight reports, deploy links, intake digests). Invite `@Claude` (`/invite @Claude`) to `#eng` and `#eng-agent`.
 - [ ] Incoming webhook for `#eng-agent` → repo secret `SLACK_WEBHOOK_URL` and local `.env`.
 - [ ] Claude app → App Home → Routing mode **Code + Chat**; each engineer connects their Claude account.
+- [ ] **TicketBot** (built 2026-11-04, `slackbot/`): create the Slack app from `slackbot/slack-manifest.yaml` (admin approves scopes), copy `xoxb-`/`xapp-` tokens into `slackbot/.env` (never into chat or git), `/invite @TicketBot` to `#eng-demo`. Write `slackbot/projects.json` with `channels`. `python -m ticketbot --check-config` → green. Needs `ANTHROPIC_API_KEY` to answer (same blocker as the reviewer). Run on the staging box via `docker compose up -d` once it exists; until then from a laptop.
 
 ## F. Orca (owner: each engineer, Windows)
 
@@ -60,3 +61,4 @@ https://claude.ai/code/routines → New task → Set up manually. Prompts in `do
 - [ ] Small EC2 (t3.small is fine), docker + compose, repo cloned to `~/agent-workflow-demo`, `.env` filled.
 - [ ] Repo variables: `STAGING_ENABLED=true`, `STAGING_HOST=<dns>`. Secrets: `STAGING_USER`, `STAGING_SSH_KEY`.
 - [ ] Push to `temp-prod` → `Deploy staging` run green → Slack message with link.
+- [ ] Same box hosts TicketBot: `provision-staging.ps1` clones `agent-kit` too; `ssh deploy@<ip>`, `cd agent-kit/slackbot`, write `.env` + `projects.json` (paths `/repos/<name>`), `docker compose up -d --build`, `docker compose logs -f`.

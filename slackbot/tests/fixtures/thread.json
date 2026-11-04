@@ -1,0 +1,17 @@
+{
+  "channel": "eng-demo",
+  "channel_id": "C0DEMO",
+  "thread_ts": "1793786000.000100",
+  "permalink": "https://datafamily.slack.com/archives/C0DEMO/p1793786000000100",
+  "requester": "ishwar",
+  "messages": [
+    {"user": "devang", "ts": "1793786000.000100", "text": "Clevergear says the Revenue tile on the demo dashboard shows NaN when the month has no orders. Screenshot in the call notes: https://notes.granola.ai/d/demo-call-nov-4"},
+    {"user": "parichay", "ts": "1793786100.000200", "text": "That's /api/warehouse/revenue returning an empty list and MetricTable dividing by zero for the delta column."},
+    {"user": "devang", "ts": "1793786200.000300", "text": "Should just show 0 and no delta. Also they want the tile to say 'no orders this month'."},
+    {"user": "ishwar", "ts": "1793786300.000400", "text": "@TicketBot make a ticket, label it client:clevergear"}
+  ],
+  "items": [
+    {"id": "M42", "title": "Dashboard revenue delta column", "url": "memory://M42", "state_key": "inReview", "state_name": "In Review",
+     "description": "**Source**: https://datafamily.slack.com/archives/C0DEMO/p1700000000000000", "criteria": ["delta shown as %"], "labels": ["web"]}
+  ]
+}

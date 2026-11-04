@@ -7,6 +7,7 @@ Shared pieces of the agent-first engineering workflow. One copy, every project u
 | Claude Code plugin (skills) | `plugins/agent-kit/skills/*` | Engineers' CLI, Orca workers, cloud tasks, CI reviewer |
 | Reusable GitHub workflows | `.github/workflows/{review,claude,deploy-staging}.yml` | Every project via thin callers |
 | Overnight runner + tracker adapters | `runner/` | Each engineer's Windows machine (Orca automation or Task Scheduler) |
+| Slack ticket bot (`@TicketBot`) | `slackbot/` | One process on the staging box (or a laptop); Claude API credits |
 | Config schemas | `schema/*.example` | `agent.json` per project, `projects.json` per machine, `.claude/settings.json` per project |
 | Cloud scheduled-task prompts | `prompts/` | claude.ai/code/routines |
 | Process docs | `docs/` | Humans |
@@ -44,6 +45,10 @@ pwsh runner\install-task.ps1                              # Task Scheduler fallb
 Each project supplies `agent.json` (tracker, base branch, test commands) and a local `.env` with the tracker token and Slack webhook. Labels: `cloud` = skipped locally, picked by the cloud nightly; `serial` = run one at a time after the parallel batch.
 
 Orca automation (per engineer): `orca automations create --name "Overnight implement" --disabled --trigger "0 23 * * 0-4" --timezone Asia/Kolkata --provider claude --repo name:agent-kit --prompt "Run pwsh runner/overnight.ps1 and print the newest overnight-report" --json`, test with `orca automations run <id>`, then enable.
+
+## Slack ticket bot
+
+`@TicketBot make a ticket for this` (or react :ticket:) in a thread → the bot reads the thread, searches the tracker, creates or edits a card/issue with `Source:` permalink + acceptance-criteria checklist, replies in-thread. Self-hosted Bolt app in Socket Mode on the Claude API (the official Claude Slack app cannot use Trello/Linear on Max). Guard rails in code: no edits to In Progress/Review/Done, max 3 creates per request, no delete. Setup, manifest and dry-run in `slackbot/README.md`. Channel → project mapping is the `channels` array in `projects.json`.
 
 ## Tracker contract
 
