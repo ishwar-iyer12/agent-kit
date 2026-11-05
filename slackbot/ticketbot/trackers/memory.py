@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 
-from .base import Item, STATE_KEYS
+from .base import Item, STATE_KEYS, criterion_matches
 
 DEFAULT_NAMES = {
     "ready": "Agent Ready",
@@ -58,12 +58,14 @@ class MemoryTracker:
         self.comments[iid] = []
         return item
 
-    def update(self, item_id, title=None, description=None, add_criteria=None, labels=None) -> Item:
+    def update(self, item_id, title=None, description=None, add_criteria=None, labels=None, remove_criteria=None) -> Item:
         it = self.get(item_id)
         if title is not None:
             it.title = title
         if description is not None:
             it.description = description
+        if remove_criteria:
+            it.criteria = [c for c in it.criteria if not any(criterion_matches(c, r) for r in remove_criteria)]
         if add_criteria:
             it.criteria.extend(add_criteria)
         if labels:

@@ -1,6 +1,6 @@
 # TicketBot
 
-`@TicketBot make a ticket for this` in any Slack thread (or react with :ticket:) and the bot reads the whole thread, searches the project's tracker, then creates or edits a Trello card / Linear issue with a Source link and testable acceptance criteria. Same card format as the hourly intake routine, so `implement-card` and the overnight runner pick it up unchanged.
+`@TicketBot make a ticket for this` in any Slack thread (or react with :ticket:) and the bot reads the whole thread (or, when mentioned top-level in a channel, the recent channel messages, walking further back on demand), searches the project's tracker, then creates or edits a Trello card / Linear issue with a Source link and testable acceptance criteria. Same card format as the hourly intake routine, so `implement-card` and the overnight runner pick it up unchanged.
 
 Why self-hosted: the official Claude Slack app only uses connectors in channels on Team/Enterprise (Claude Tag); on Max it cannot reach Trello/Linear. This runs on the Claude API ($200 credits) instead, ~$0.03–0.08 per mention on Opus 5.5.
 
@@ -27,7 +27,7 @@ Instructions it understands: create (default), `add AC: …`, `label it client:a
 ## Tests
 
 ```
-.venv/Scripts/python -m pytest -q      # 23 tests: config resolution, Slack markup cleanup, Trello/Linear request shapes (mocked), guard rails, agent loop with a fake Claude
+.venv/Scripts/python -m pytest -q      # 32 tests: config resolution, Slack markup cleanup, Trello/Linear request shapes (mocked), guard rails, agent loop with a fake Claude
 ```
 
 ## Files
@@ -42,8 +42,14 @@ Instructions it understands: create (default), `add AC: …`, `label it client:a
 | `ticketbot/trackers/{base,trello,linear,memory}.py` | tracker contract, adapters, guard wrapper |
 | `slack-manifest.yaml` | Slack app definition |
 
+## Live status
+
+First run 2026-11-06 against Linear team `THE` from `#eng-demo` (Ishwar's Slack app `A0CEW3VCW3H`): create, `add AC`, `move to Agent Ready`, refusal on an In Review issue with comment, and a top-level mention with no thread (lunch chatter in between was ignored). $0.04-0.11 per request on Opus 5.5, 17-44 s.
+
 ## Limits
 
 - Reads links in the thread but does not fetch Granola/Paper content; `implement-card` does that later from the `Source:` / `Design:` lines.
 - One Slack workspace, one bot token. Per-project tracker credentials come from the same `.env`.
+- Mentions posted top-level (no thread) start from the 15 channel messages before them; the model can load up to 200 more via `load_earlier_messages`, then asks instead of guessing.
+- Criteria can be added and removed (`remove_criteria`, exact or distinctive-substring match); labels are only ever added.
 - Socket Mode = one running process. If it is down, mentions are dropped (Slack retries for a few minutes only).

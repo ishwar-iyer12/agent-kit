@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import httpx
 
-from .base import Item, criteria_markdown, split_criteria
+from .base import Item, criteria_markdown, criterion_matches, split_criteria
 
 URL = "https://api.linear.app/graphql"
 
@@ -161,15 +161,16 @@ class LinearTracker:
         )
         return self._item(d["issueCreate"]["issue"])
 
-    def update(self, item_id, title=None, description=None, add_criteria=None, labels=None) -> Item:
+    def update(self, item_id, title=None, description=None, add_criteria=None, labels=None, remove_criteria=None) -> Item:
         issue = self._raw(item_id)
         body, criteria = split_criteria(issue.get("description") or "")
         inp: dict = {}
         if title is not None:
             inp["title"] = title
-        if description is not None or add_criteria:
+        if description is not None or add_criteria or remove_criteria:
             new_body = description if description is not None else body
-            new_crit = criteria + [c for c in (add_criteria or []) if c.strip()]
+            kept = [c for c in criteria if not any(criterion_matches(c, r) for r in (remove_criteria or []))]
+            new_crit = kept + [c for c in (add_criteria or []) if c.strip()]
             inp["description"] = self._compose(new_body, new_crit)
         if labels:
             existing = [l["id"] for l in issue["labels"]["nodes"]]

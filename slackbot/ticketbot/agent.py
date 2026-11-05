@@ -69,7 +69,7 @@ TOOLS: list[dict] = [
     },
     {
         "name": "update_item",
-        "description": "Edit an existing item. Pass null for fields you do not change. add_criteria appends to the acceptance criteria; labels are added, never removed.",
+        "description": "Edit an existing item. Pass null for fields you do not change. add_criteria appends to the acceptance criteria; remove_criteria drops criteria whose text matches (exact, or the given text is a distinctive part of it); labels are added, never removed.",
         "strict": True,
         "input_schema": _schema(
             {
@@ -77,9 +77,10 @@ TOOLS: list[dict] = [
                 "title": {"type": ["string", "null"]},
                 "description": {"type": ["string", "null"]},
                 "add_criteria": {"type": "array", "items": {"type": "string"}},
+                "remove_criteria": {"type": "array", "items": {"type": "string"}},
                 "labels": {"type": "array", "items": {"type": "string"}},
             },
-            ["id", "title", "description", "add_criteria", "labels"],
+            ["id", "title", "description", "add_criteria", "remove_criteria", "labels"],
         ),
     },
     {
@@ -110,6 +111,16 @@ class RunResult:
     model: str = ""
 
 
+EARLIER_TOOL: dict = {
+    "name": "load_earlier_messages",
+    "description": ("Only available when the context is recent channel messages rather than a thread. Loads the channel "
+                    "messages posted before the oldest one you have seen so far, oldest first. Call it again to go further "
+                    "back. Stop when you have the whole discussion of the topic, or when it returns no messages."),
+    "strict": True,
+    "input_schema": _schema({"limit": {"type": "integer", "description": "How many earlier messages to load, 5-50"}}, ["limit"]),
+}
+
+
 def bind_tools(tracker: Guarded) -> dict[str, Callable[[dict], Any]]:
     return {
         "search_items": lambda a: [i.summary() for i in tracker.search(a["query"])],
@@ -118,7 +129,8 @@ def bind_tools(tracker: Guarded) -> dict[str, Callable[[dict], Any]]:
             a["title"], a["description"], a["acceptance_criteria"], a["labels"], a["state"]
         ).full(),
         "update_item": lambda a: tracker.update(
-            a["id"], title=a.get("title"), description=a.get("description"), add_criteria=a.get("add_criteria") or [], labels=a.get("labels") or []
+            a["id"], title=a.get("title"), description=a.get("description"), add_criteria=a.get("add_criteria") or [], labels=a.get("labels") or [],
+            remove_criteria=a.get("remove_criteria") or []
         ).full(),
         "move_item": lambda a: tracker.move(a["id"], a["state"]).summary(),
         "comment_item": lambda a: (tracker.comment(a["id"], a["body"]), {"ok": True})[1],
@@ -147,10 +159,16 @@ def estimate_cost(model: str, usage: dict) -> float:
     ) / 1_000_000
 
 
-def run(client, tracker: Guarded, thread_text: str, model: str | None = None, max_iterations: int = 12) -> RunResult:
-    """Drive Claude over the tracker tools until it answers. `client` is an anthropic.Anthropic (or a fake)."""
+def run(client, tracker: Guarded, thread_text: str, model: str | None = None, max_iterations: int = 12,
+        extra_tools: dict[str, tuple[dict, Callable[[dict], Any]]] | None = None) -> RunResult:
+    """Drive Claude over the tracker tools until it answers. `client` is an anthropic.Anthropic (or a fake).
+    `extra_tools` maps a tool name to (tool schema, handler); used for context tools such as load_earlier_messages."""
     model = model or os.environ.get("TICKETBOT_MODEL") or DEFAULT_MODEL
     handlers = bind_tools(tracker)
+    tools = list(TOOLS)
+    for name, (schema, handler) in (extra_tools or {}).items():
+        tools.append(schema)
+        handlers[name] = handler
     messages: list[dict] = [{"role": "user", "content": thread_text}]
     result = RunResult(reply="", model=model)
     started = time.time()
@@ -162,7 +180,7 @@ def run(client, tracker: Guarded, thread_text: str, model: str | None = None, ma
             model=model,
             max_tokens=MAX_TOKENS,
             system=system,
-            tools=TOOLS,
+            tools=tools,
             messages=list(messages),
             betas=[FALLBACK_BETA],
             fallbacks="default",

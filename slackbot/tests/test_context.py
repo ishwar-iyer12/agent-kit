@@ -49,3 +49,62 @@ def test_reader_builds_context():
     assert [m.text for m in ctx.messages] == ["root https://notes.granola.ai/d/1", "make a ticket"]
     assert ctx.links == ["https://notes.granola.ai/d/1"]
     assert ctx.instruction == "make a ticket"
+
+
+class FakeSlackNoThread(FakeSlack):
+    """Mention posted top-level in the channel: replies returns only the mention itself."""
+
+    def conversations_replies(self, channel, ts, limit, cursor=None):
+        return {"messages": [{"user": "U2", "ts": "9.0", "text": "<@UBOT> make a ticket"}], "response_metadata": {"next_cursor": ""}}
+
+    def conversations_history(self, channel, latest, inclusive, limit):
+        assert latest == "9.0" and not inclusive
+        return {"messages": [  # newest first, like Slack; the mention itself is excluded (inclusive=False)
+            {"user": "U1", "ts": "8.0", "text": "they want it to show 0"},
+            {"user": "U1", "ts": "7.0", "text": "revenue tile shows NaN <https://notes.granola.ai/d/2>"},
+            {"user": "U3", "ts": "6.0", "text": "a reply in some other thread", "thread_ts": "5.0"},
+        ]}
+
+
+def test_reader_falls_back_to_recent_channel_messages():
+    ctx = SlackReader(FakeSlackNoThread()).thread("C1", "9.0", "U2", "<@UBOT> make a ticket", "UBOT")
+    assert ctx.scope == "recent"
+    assert [m.text for m in ctx.messages] == ["revenue tile shows NaN https://notes.granola.ai/d/2", "they want it to show 0", "make a ticket"]
+    assert ctx.links == ["https://notes.granola.ai/d/2"]
+    assert "Recent channel messages" in ctx.render()
+
+
+def test_reader_keeps_thread_scope_when_thread_exists():
+    assert SlackReader(FakeSlack()).thread("C1", "1.0", "U2", "x", "UBOT").scope == "thread"
+
+
+class FakeSlackBotOnlyThread(FakeSlack):
+    """Thread exists but holds only mentions of the bot and the bot's own replies."""
+
+    def conversations_replies(self, channel, ts, limit, cursor=None):
+        return {"messages": [
+            {"user": "U2", "ts": "9.0", "thread_ts": "9.0", "text": "<@UBOT> make a ticket"},
+            {"user": "UBOT", "ts": "9.5", "thread_ts": "9.0", "text": "I haven't created anything yet."},
+            {"user": "U2", "ts": "9.7", "thread_ts": "9.0", "text": "<@UBOT> make a ticket"},
+        ], "response_metadata": {"next_cursor": ""}}
+
+    def conversations_history(self, channel, latest, inclusive, limit):
+        assert latest == "9.0" and not inclusive
+        return {"messages": [{"user": "U1", "ts": "8.0", "text": "they want it to show 0"},
+                             {"user": "U1", "ts": "7.0", "text": "revenue tile shows NaN"}]}
+
+
+def test_reader_falls_back_when_thread_has_only_bot_traffic():
+    ctx = SlackReader(FakeSlackBotOnlyThread()).thread("C1", "9.0", "U2", "<@UBOT> make a ticket", "UBOT")
+    assert ctx.scope == "recent"
+    assert [m.text for m in ctx.messages][:3] == ["revenue tile shows NaN", "they want it to show 0", "make a ticket"]
+
+
+def test_reader_earlier_walks_back_and_reports_oldest_ts():
+    class Fake(FakeSlack):
+        def conversations_history(self, channel, latest, inclusive, limit):
+            assert latest == "7.0" and not inclusive and limit == 20
+            return {"messages": [{"user": "U1", "ts": "6.0", "text": "<@UBOT> hi"}, {"user": "U1", "ts": "5.0", "text": "older topic"},
+                                 {"subtype": "channel_join", "user": "U9", "ts": "4.0", "text": "joined"}]}
+    msgs, oldest = SlackReader(Fake()).earlier("C1", "7.0", 20, "UBOT")
+    assert [m.text for m in msgs] == ["older topic", "hi"] and oldest == "4.0"

@@ -45,3 +45,19 @@ def test_split_and_render_criteria_roundtrip():
     assert crit == ["one", "two"]
     assert "Acceptance criteria" not in rest and "## Notes" in rest
     assert criteria_markdown(["a"]) == "## Acceptance criteria\n- [ ] a"
+
+
+def test_remove_criteria_matches_exact_or_distinctive_substring():
+    from ticketbot.trackers.base import criterion_matches
+    assert criterion_matches("Empty-month value to be confirmed (0 / $0)", "empty-month value TO BE confirmed (0 / $0)")
+    assert criterion_matches("Empty-month value to be confirmed (0 / $0)", "value to be confirmed")
+    assert not criterion_matches("Empty-month value to be confirmed", "value")  # too short to be distinctive
+    assert not criterion_matches("shows 0", "shows 1")
+
+
+def test_memory_update_remove_then_add_criteria():
+    from ticketbot.trackers.memory import MemoryTracker
+    t = MemoryTracker()
+    it = t.create("T", "d", ["delta shown as %", "value to be confirmed later"], [], "needsSpec")
+    it = t.update(it.id, remove_criteria=["to be confirmed later"], add_criteria=["shows 0"])
+    assert it.criteria == ["delta shown as %", "shows 0"]

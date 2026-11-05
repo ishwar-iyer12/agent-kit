@@ -108,6 +108,9 @@ def serve(settings) -> int:
 
 
 def main(argv=None) -> int:
+    for stream in (sys.stdout, sys.stderr):  # Windows consoles default to cp1252; replies contain arrows/emoji
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(prog="ticketbot")
     ap.add_argument("--check-config", action="store_true")
     ap.add_argument("--dry-run", nargs=2, metavar=("THREAD_JSON", "INSTRUCTION"))

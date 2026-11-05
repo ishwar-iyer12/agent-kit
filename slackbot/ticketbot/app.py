@@ -49,6 +49,10 @@ def post_audit(text: str) -> None:
         log.warning("audit webhook failed", exc_info=True)
 
 
+EARLIER_MAX_CALLS = 6
+EARLIER_MAX_MESSAGES = 200
+
+
 def build_app(settings: Settings, anthropic_client: anthropic.Anthropic | None = None) -> App:
     app = App(token=os.environ["SLACK_BOT_TOKEN"])
     bot_user_id = app.client.auth_test()["user_id"]
@@ -66,13 +70,28 @@ def build_app(settings: Settings, anthropic_client: anthropic.Anthropic | None =
         except Exception:
             pass  # already_reacted / no permission: cosmetic
 
+    def earlier_tool(channel: str, ctx):
+        """load_earlier_messages bound to this channel; walks back from the oldest message already shown, capped."""
+        state = {"before": ctx.oldest_ts, "loaded": 0, "calls": 0}
+
+        def load(a: dict):
+            if state["calls"] >= EARLIER_MAX_CALLS or state["loaded"] >= EARLIER_MAX_MESSAGES:
+                return {"messages": [], "note": "limit reached; if the context is still unclear, ask the requester"}
+            state["calls"] += 1
+            msgs, oldest = reader.earlier(channel, state["before"], max(5, min(50, int(a.get("limit") or 20))), bot_user_id)
+            state["before"], state["loaded"] = oldest, state["loaded"] + len(msgs)
+            return {"messages": [f"[{m.when()}] {m.user}: {m.text}" for m in msgs],
+                    "note": "no earlier messages" if not msgs else f"{len(msgs)} messages, oldest first"}
+
+        return {"load_earlier_messages": (agent.EARLIER_TOOL, load)}
+
     def handle(channel: str, msg_ts: str, thread_ts: str, requester: str, instruction: str) -> None:
         react(channel, msg_ts, "eyes")
         try:
             project = settings.resolve(channel_id=channel, channel_name=reader.channel_name(channel))
             tracker = Guarded(build_tracker(project))
             ctx = reader.thread(channel, thread_ts, requester, instruction, bot_user_id)
-            res = agent.run(claude, tracker, ctx.render())
+            res = agent.run(claude, tracker, ctx.render(), extra_tools=earlier_tool(channel, ctx) if ctx.scope == "recent" else None)
             reply = res.reply
             ok = True
         except ConfigError as e:

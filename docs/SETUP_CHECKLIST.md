@@ -45,7 +45,7 @@ https://claude.ai/code/routines → New task → Set up manually. Prompts in `do
 - [ ] Channel `#eng-agent` (overnight reports, deploy links, intake digests). Invite `@Claude` (`/invite @Claude`) to `#eng` and `#eng-agent`.
 - [ ] Incoming webhook for `#eng-agent` → repo secret `SLACK_WEBHOOK_URL` and local `.env`.
 - [ ] Claude app → App Home → Routing mode **Code + Chat**; each engineer connects their Claude account.
-- [ ] **TicketBot** (built 2026-11-04, `slackbot/`): create the Slack app from `slackbot/slack-manifest.yaml` (admin approves scopes), copy `xoxb-`/`xapp-` tokens into `slackbot/.env` (never into chat or git), `/invite @TicketBot` to `#eng-demo`. Write `slackbot/projects.json` with `channels`. `python -m ticketbot --check-config` → green. Needs `ANTHROPIC_API_KEY` to answer (same blocker as the reviewer). Run on the staging box via `docker compose up -d` once it exists; until then from a laptop.
+- [x] **TicketBot** (built 2026-11-04, live 2026-11-06 from Ishwar's laptop against Linear team `THE`; Nimit's duplicate Slack app removed) (`slackbot/`): create the Slack app from `slackbot/slack-manifest.yaml` (admin approves scopes), copy `xoxb-`/`xapp-` tokens into `slackbot/.env` (never into chat or git), `/invite @TicketBot` to `#eng-demo`. Write `slackbot/projects.json` with `channels`. `python -m ticketbot --check-config` → green. Needs `ANTHROPIC_API_KEY` to answer (same blocker as the reviewer). Run on the staging box via `docker compose up -d` once it exists; until then from a laptop.
 
 ## F. Orca (owner: each engineer, Windows)
 

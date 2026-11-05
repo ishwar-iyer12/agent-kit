@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import httpx
 
-from .base import CRITERIA_HEADING, Item
+from .base import CRITERIA_HEADING, Item, criterion_matches
 
 BASE = "https://api.trello.com/1"
 CARD_FIELDS = "name,desc,idList,labels,shortLink,shortUrl,idBoard"
@@ -147,7 +147,7 @@ class TrelloTracker:
             if c.strip():
                 self._req("POST", f"/checklists/{cl_id}/checkItems", {"name": c.strip(), "pos": "bottom"})
 
-    def update(self, item_id, title=None, description=None, add_criteria=None, labels=None) -> Item:
+    def update(self, item_id, title=None, description=None, add_criteria=None, labels=None, remove_criteria=None) -> Item:
         params: dict = {}
         if title is not None:
             params["name"] = title
@@ -158,9 +158,14 @@ class TrelloTracker:
             params["idLabels"] = ",".join(sorted(set(current.get("idLabels", [])) | set(self.label_ids(labels))))
         if params:
             self._req("PUT", f"/cards/{item_id}", params)
-        if add_criteria:
+        if add_criteria or remove_criteria:
             card = self._req("GET", f"/cards/{item_id}", {"fields": "id", "checklists": "all"})
-            self._add_criteria(card["id"], card.get("checklists"), add_criteria)
+            for cl in card.get("checklists") or []:
+                for ci in cl.get("checkItems") or []:
+                    if any(criterion_matches(ci.get("name", ""), r) for r in (remove_criteria or [])):
+                        self._req("DELETE", f"/checklists/{cl['id']}/checkItems/{ci['id']}")
+            if add_criteria:
+                self._add_criteria(card["id"], card.get("checklists"), add_criteria)
         return self.get(item_id)
 
     def move(self, item_id, state_key) -> Item:

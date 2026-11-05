@@ -70,3 +70,18 @@ def test_refusal_and_iteration_cap():
     looping = FakeClaude([NS(stop_reason="tool_use", usage=usage(), content=[tool_use("t", "search_items", {"query": "q"})])] * 3)
     res = agent.run(looping, Guarded(MemoryTracker()), "x", max_iterations=3)
     assert "ran out of steps" in res.reply and res.iterations == 3
+
+
+def test_extra_tool_is_offered_and_dispatched():
+    tracker = Guarded(MemoryTracker())
+    calls = []
+    extra = {"load_earlier_messages": (agent.EARLIER_TOOL, lambda a: calls.append(a) or {"messages": ["[t] devang: earlier context"], "note": "1 messages"})}
+    fake = FakeClaude([
+        NS(stop_reason="tool_use", usage=usage(), content=[tool_use("t1", "load_earlier_messages", {"limit": 20})]),
+        NS(stop_reason="end_turn", usage=usage(), content=[text("Need more: what should the tile show?")]),
+    ])
+    res = agent.run(fake, tracker, "Recent channel messages ...", model="claude-opus-5-5", extra_tools=extra)
+    assert calls == [{"limit": 20}]
+    assert any(t["name"] == "load_earlier_messages" for t in fake.requests[0]["tools"])
+    assert "earlier context" in fake.requests[1]["messages"][-1]["content"][0]["content"]
+    assert res.actions == [] and "Need more" in res.reply

@@ -71,3 +71,14 @@ def test_ping_reports_missing_lists(respx_mock):
         assert "In Progress" in str(e)
     else:
         raise AssertionError("expected missing-list error")
+
+
+@respx.mock(base_url=BASE, assert_all_called=False)
+def test_update_remove_criteria_deletes_check_item(respx_mock):
+    respx_mock.get("/boards/board1/lists").respond(json=LISTS)
+    t = tracker()
+    respx_mock.get("/cards/abc123").respond(json={**card(list_id="L1"), "checklists": [
+        {"id": "CL1", "name": "Acceptance criteria", "checkItems": [{"id": "CI1", "name": "value to be confirmed later", "pos": 1}, {"id": "CI2", "name": "shows 0", "pos": 2}]}]})
+    deleted = respx_mock.delete("/checklists/CL1/checkItems/CI1").respond(json={})
+    t.update("abc123", remove_criteria=["to be confirmed later"])
+    assert deleted.called

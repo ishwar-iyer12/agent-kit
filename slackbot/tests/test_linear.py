@@ -76,3 +76,13 @@ def test_auth_header_and_graphql_errors_raise():
     except RuntimeError as e:
         assert "nope" in str(e)
     assert respx.calls.last.request.headers["Authorization"] == "lin_key"
+
+
+@respx.mock
+def test_update_remove_criteria_recomposes_description():
+    handler, seen = router([("teams(", TEAM), ("issue(id", {"issue": issue()}), ("issueUpdate", {"issueUpdate": {"success": True}})])
+    respx.post(URL).mock(side_effect=handler)
+    t = LinearTracker(LINEAR_CFG, api_key="key")
+    t.update("TL-7", remove_criteria=["one"], add_criteria=["two"])
+    upd = [s for s in seen if "issueUpdate" in s["query"]][0]["variables"]
+    assert upd["input"]["description"] == "**Source**: https://s/p\n\n## Acceptance criteria\n- [ ] two"

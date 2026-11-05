@@ -57,6 +57,7 @@ class Tracker(Protocol):
         description: str | None = None,
         add_criteria: list[str] | None = None,
         labels: list[str] | None = None,
+        remove_criteria: list[str] | None = None,
     ) -> Item: ...
     def move(self, item_id: str, state_key: str) -> Item: ...
     def comment(self, item_id: str, body: str) -> None: ...
@@ -107,9 +108,10 @@ class Guarded:
         self.actions.append(f"created {item.id} ({item.state_name})")
         return item
 
-    def update(self, item_id, title=None, description=None, add_criteria=None, labels=None) -> Item:
+    def update(self, item_id, title=None, description=None, add_criteria=None, labels=None, remove_criteria=None) -> Item:
         self._unlocked(item_id, "edit")
-        item = self.inner.update(item_id, title=title, description=description, add_criteria=add_criteria, labels=labels)
+        item = self.inner.update(item_id, title=title, description=description, add_criteria=add_criteria, labels=labels,
+                                 remove_criteria=remove_criteria)
         self.updated.append(item)
         self.actions.append(f"updated {item.id}")
         return item
@@ -167,3 +169,9 @@ def split_criteria(description: str) -> tuple[str, list[str]]:
             in_section = False
         body.append(line)
     return "\n".join(body).rstrip(), crit
+
+
+def criterion_matches(existing: str, wanted: str) -> bool:
+    """remove_criteria matching: exact (case/space-insensitive) or the wanted text is a distinctive substring."""
+    e, w = " ".join(existing.lower().split()), " ".join(wanted.lower().split())
+    return bool(w) and (e == w or (len(w) >= 12 and w in e))
